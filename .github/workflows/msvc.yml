@@ -1,0 +1,82 @@
+name: build-ffmpeg-gfxcapture-windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    env:
+      FFMPEG_SRC_DIR: ffmpeg
+      BUILD_DIR: build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      # 安装 FFmpeg 构建常用依赖：nasm、make、perl（MSVC 用不到 yasm，但 nasm 常用）
+      - name: Install build deps (choco)
+        shell: powershell
+        run: |
+          choco install -y nasm
+          choco install -y make
+          choco install -y strawberryperl
+
+      # 取 FFmpeg 源码（也可改成你自己的 fork，或固定版本 tag）
+      - name: Fetch FFmpeg source
+        shell: bash
+        run: |
+          git clone --depth=1 https://github.com/FFmpeg/FFmpeg.git "$FFMPEG_SRC_DIR"
+
+      # 进入 VS 开发者环境 + 直接在同一个 step 里调用 Git Bash
+      # 这样 vcvars64 设置的 INCLUDE/LIB/WindowsSdkDir 等可被 bash 继承
+      - name: Configure & Build (MSVC + bash)
+        shell: cmd
+        run: |
+          call "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.Component.MSBuild -property installationPath > vsdir.txt
+          set /p VSDIR=<vsdir.txt
+          del vsdir.txt
+          call "%VSDIR%\VC\Auxiliary\Build\vcvars64.bat"
+
+          rem 确认 cl / link / SDK 已可见（可留作调试）
+          cl 2>nul | findstr /i "Compiler Version"
+          where cl
+          echo WindowsSdkDir=%WindowsSdkDir%
+          echo INCLUDE=%INCLUDE%
+          echo LIB=%LIB%
+
+          rem 用 Git Bash 跑 configure / make
+          bash -lc ^
+          "set -euxo pipefail; ^
+           cd \"$FFMPEG_SRC_DIR\"; ^
+           mkdir -p \"$BUILD_DIR\"; cd \"$BUILD_DIR\"; ^
+           ../configure \
+             --toolchain=msvc \
+             --arch=x86_64 \
+             --target-os=win64 \
+             --enable-d3d11va \
+             --enable-optimizations \
+             --disable-debug \
+             --enable-static \
+             --disable-shared; ^
+           make -j%NUMBER_OF_PROCESSORS%"
+
+      - name: Collect artifacts
+        shell: bash
+        run: |
+          mkdir -p out
+          cp "$FFMPEG_SRC_DIR/$BUILD_DIR/ffmpeg.exe"  out/
+          cp "$FFMPEG_SRC_DIR/$BUILD_DIR/ffprobe.exe" out/
+          # 如需 dll 或 dev 库可一并复制
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-gfxcapture-win64
+          path: out
