@@ -8,23 +8,20 @@ on:
 jobs:
   build:
     runs-on: windows-2022
-
     steps:
       - uses: actions/checkout@v4
 
-      # 配好 MSVC/SDK 环境（自动设置 INCLUDE/LIB/WindowsSdkDir，后续 bash 也能继承）
       - name: Setup MSVC dev cmd
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
-          # 可选：指定 sdk/toolset 版本
-          # sdk: 10.0.26100.0
-          # toolset: 14.44
 
-      - name: Install build deps
+      - name: Setup NASM
+        uses: ilammy/setup-nasm@v1
+
+      - name: Install other deps
         shell: powershell
         run: |
-          choco install -y nasm
           choco install -y strawberryperl
           choco install -y make
 
@@ -33,10 +30,11 @@ jobs:
         run: |
           git clone --depth=1 https://github.com/FFmpeg/FFmpeg.git ffmpeg
 
-      - name: Configure & Build (pure bash)
+      - name: Configure & Build (bash)
         shell: bash
         run: |
           set -euxo pipefail
+          nasm -v
           cd ffmpeg
           mkdir -p build && cd build
           ../configure \
@@ -49,11 +47,3 @@ jobs:
             --enable-static \
             --disable-shared
           make -j"$(nproc || echo $NUMBER_OF_PROCESSORS)"
-
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: ffmpeg-gfxcapture-win64
-          path: |
-            ffmpeg/build/ffmpeg.exe
-            ffmpeg/build/ffprobe.exe
