@@ -25,14 +25,12 @@ jobs:
           choco install -y strawberryperl
           choco install -y make
           choco install -y pkgconfiglite 
-       
-
       - name: Configure & Build (bash)
         shell: bash
         run: |
           set -euxo pipefail
           nasm -v
-          mkdir -p build && cd build
+          mkdir -p build
           ./configure \
             --toolchain=msvc \
             --arch=x86_64 \
@@ -41,5 +39,7 @@ jobs:
             --enable-optimizations \
             --disable-debug \
             --enable-static \
-            --disable-shared
-          # make -j"$(nproc || echo $NUMBER_OF_PROCESSORS)"
+            --disable-shared \
+            --prefix="$(pwd)/build"
+          make -j"$(nproc || echo $NUMBER_OF_PROCESSORS)"
+          
