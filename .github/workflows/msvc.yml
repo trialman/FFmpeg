@@ -25,6 +25,7 @@ jobs:
           choco install -y strawberryperl
           choco install -y make
           choco install -y pkgconfiglite 
+          choco install -y gawk
       - name: Configure & Build (bash)
         shell: bash
         run: |
