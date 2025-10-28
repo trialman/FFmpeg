@@ -24,15 +24,8 @@ jobs:
         run: |
           choco install -y strawberryperl
           choco install -y make
-      - name: Install pkg-config
-        uses: msys2/setup-msys2@v2
-        with:
-          install: mingw-w64-x86_64-pkg-config
-          update: true
-      - name: Fetch FFmpeg
-        shell: bash
-        run: |
-          git clone --depth=1 https://github.com/FFmpeg/FFmpeg.git ffmpeg
+          choco install -y pkgconfiglite 
+       
 
       - name: Configure & Build (bash)
         shell: bash
@@ -41,7 +34,7 @@ jobs:
           nasm -v
           cd ffmpeg
           mkdir -p build && cd build
-          ../configure \
+          ./configure \
             --toolchain=msvc \
             --arch=x86_64 \
             --target-os=win64 \
@@ -50,4 +43,4 @@ jobs:
             --disable-debug \
             --enable-static \
             --disable-shared
-          make -j"$(nproc || echo $NUMBER_OF_PROCESSORS)"
+          # make -j"$(nproc || echo $NUMBER_OF_PROCESSORS)"
