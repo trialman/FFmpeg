@@ -30,6 +30,8 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
+          which gawk
+          ln -sf "$(which gawk)" /usr/bin/awk
           nasm -v
           mkdir -p build
           ./configure \
