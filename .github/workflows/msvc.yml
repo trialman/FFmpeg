@@ -24,7 +24,11 @@ jobs:
         run: |
           choco install -y strawberryperl
           choco install -y make
-
+      - name: Install pkg-config
+        uses: msys2/setup-msys2@v2
+        with:
+          install: mingw-w64-x86_64-pkg-config
+          update: true
       - name: Fetch FFmpeg
         shell: bash
         run: |
