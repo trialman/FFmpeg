@@ -45,4 +45,15 @@ jobs:
             --disable-shared \
             --prefix="$(pwd)/build"
           make -j"$(nproc || echo $NUMBER_OF_PROCESSORS)"
-          
+      - name: Collect artifacts
+        shell: bash
+        run: |
+          mkdir -p out
+          cp "$FFMPEG_SRC_DIR/$BUILD_DIR/ffmpeg.exe"  out/
+          cp "$FFMPEG_SRC_DIR/$BUILD_DIR/ffprobe.exe" out/ 
+          cp "$FFMPEG_SRC_DIR/$BUILD_DIR/ffplay.exe" out/ 
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-gfxcapture-win64
+          path: out
